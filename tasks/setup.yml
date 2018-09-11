@@ -1,12 +1,13 @@
 ---
 - name: create admin user
-  shell: "drpcli users create {{ provision_admin_user }}"
+  shell: "drpcli users create '{\"Name\":\"{{ provision_admin_user }}\",\"Roles\":[\"superuser\"]}'"
   args:
     creates: "{{ provision_var_dir }}/digitalrebar/users/{{ provision_admin_user }}.json"
+  when: provision_admin_user != "rocketskates"
 
 - name: check password for admin user
   uri:
-    url: https://127.0.0.1:8092/api/v3/prefs
+    url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/prefs"
     user: "{{ provision_admin_user }}"
     password: "{{ provision_admin_password }}"
     headers:
@@ -21,12 +22,12 @@
 
 - name: set the admin user for setup
   set_fact:
-    setup_admin_user: "{{ provision_admin_user if admin_password_check.status == 200 | default('rocketskates') }}"
-    setup_admin_password: "{{ provision_admin_password if admin_password_check.status == 200 | default('r0cketsk8ts') }}"
+    setup_admin_user: "{{ provision_admin_user if admin_password_check.status == 200 else 'rocketskates' | default('rocketskates') }}"
+    setup_admin_password: "{{ provision_admin_password if admin_password_check.status == 200 else 'r0cketsk8ts' | default('r0cketsk8ts') }}"
 
 - name: config admin user password
   uri:
-    url: "https://127.0.0.1:8092/api/v3/users/{{ provision_admin_user }}/password"
+    url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/password"
     body: |
       {
         "Password": "{{ provision_admin_password }}"
@@ -41,7 +42,6 @@
     force_basic_auth: yes
     return_content: yes
     validate_certs: no
-  register: change_password_results
   run_once: yes
   when: admin_password_check.status != 200
 
@@ -50,27 +50,6 @@
     content: "#!/bin/bash\nexport RS_KEY=\"{{ provision_admin_user }}:{{ provision_admin_password }}\""
     dest: "/etc/profile.d/dr-provision.sh"
     mode: 0755
-
-- name: generate admin user token
-  uri:
-    url: "https://127.0.0.1:8092/api/v3/users/{{ setup_admin_user }}/token?ttl={{ provision_token_ttl }}"
-    user: "{{ setup_admin_user }}"
-    password: "{{ setup_admin_password }}"
-    headers:
-      Content-Type: "application/json"
-      Accept: "application/json"
-    force_basic_auth: yes
-    return_content: yes
-    validate_certs: no
-  ignore_errors: yes
-  register: admin_token
-  run_once: yes
-
-- name: remove default rocketskates user if different from admin user
-  shell: "drpcli -T {{ admin_token.json.Token }} users destroy rocketskates"
-  args:
-    removes: "{{ provision_var_dir }}/digitalrebar/users/rocketskates.json"
-  when: provision_admin_user != "rocketskates" and admin_password_check.status == 200 and provision_delete_default_user
 
 - name: add drpcli autocomplete definitions
   shell: "drpcli autocomplete /etc/bash_completion.d/drpcli"
@@ -82,13 +61,42 @@
     content: '{"Meta":{},"Name":"{{ item.key }}","Val":"{{ item.value }}"}'
     dest: "{{ provision_var_dir }}/digitalrebar/preferences/{{ item.key }}.json"
   with_dict: "{{ provision_preferences }}"
-  notify:
-    - restart dr-provision
+  register: provision_preferences_results
+
+- name: restart dr-provision 
+  systemd:
+    name: dr-provision
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  when: provision_preferences_results.changed
+
+- name: generate admin user token
+  uri:
+    url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
+    user: "{{ provision_admin_user }}"
+    password: "{{ provision_admin_password }}"
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+    force_basic_auth: yes
+    return_content: yes
+    validate_certs: no
+  register: admin_token
+  until: admin_token.status == 200
+  retries: 60
+  delay: 1
+
+- name: remove default rocketskates user if different from admin user
+  shell: "drpcli -T {{ admin_token.json.Token }} users destroy rocketskates"
+  args:
+    removes: "{{ provision_var_dir }}/digitalrebar/users/rocketskates.json"
+  when: provision_admin_user != "rocketskates" and provision_delete_default_user
 
 - name: check drp-community-content exists
   command: drpcli -T {{ admin_token.json.Token }} contents exists drp-community-content
-  ignore_errors: yes
   register: drp_community_content_result
+  failed_when: drp_community_content_result.rc not in [0,1]
 
 - name: create drp-community-content
   shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml\""
@@ -98,10 +106,26 @@
   shell: "drpcli -T {{ admin_token.json.Token }} contents update drp-community-content \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml\""
   when: verify_provision_content_results.stdout | search("OK") and drp_community_content_result.rc == 0
 
+- name: re-generate admin user token due to contents create bug
+  uri:
+    url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
+    user: "{{ provision_admin_user }}"
+    password: "{{ provision_admin_password }}"
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+    force_basic_auth: yes
+    return_content: yes
+    validate_certs: no
+  register: admin_token
+  until: admin_token.status == 200
+  retries: 60
+  delay: 1
+
 - name: get boot environments
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item }}"
+  when: not((item is undefined) or (item is none) or (item | trim == '')) and provision_install_default_isos
   with_items: "{{ provision_content_bootenvs }}"
-  when: provision_install_default_isos
 
 - name: copy custom bootenvs
   copy:
@@ -109,22 +133,24 @@
     dest: "{{ provision_var_dir }}/digitalrebar/bootenvs/{{ item }}"
     mode: 0640
   register: provision_bootenvs
+  when: not((item is undefined) or (item is none) or (item | trim == ''))
   with_items: "{{ provision_bootenvs_files }}"
 
 - name: check custom bootenvs
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs exists {{ item.item | regex_replace('.yaml','') }}"
-  ignore_errors: yes
   register: provision_bootenvs_check
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == ''))
+  failed_when: provision_bootenvs_check.rc not in [0,1]
   with_items: "{{ provision_bootenvs.results }}"
 
 - name: create custom bootenvs
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs create - < {{ provision_var_dir }}/digitalrebar/bootenvs/{{ item.item.item }}"
-  when: item.rc is defined and item.rc == 1 and item.item.changed == true
+  when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 1 and item.item.changed == true
   with_items: "{{ provision_bootenvs_check.results }}"
 
 - name: update custom bootenvs
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.item.item | regex_replace('.yaml','') }} - < {{ provision_var_dir }}/digitalrebar/bootenvs/{{ item.item.item }}"
-  when: item.rc is defined and item.rc == 0 and item.item.changed == true
+  when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_bootenvs_check.results }}"
 
 - name: copy custom templates
@@ -133,43 +159,45 @@
     dest: "{{ provision_var_dir }}/digitalrebar/templates/{{ item }}"
     mode: 0640
   register: provision_templates
+  when: not((item is undefined) or (item is none) or (item | trim == ''))
   with_items: "{{ provision_templates_files }}"
 
 - name: check custom templates
   shell: "drpcli -T {{ admin_token.json.Token }} templates exists {{ item.item | regex_replace('.yaml','') }}"
-  ignore_errors: yes
   register: provision_templates_check
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == ''))
+  failed_when: provision_templates_check.rc not in [0,1]
   with_items: "{{ provision_templates.results }}"
 
 - name: create custom templates
   shell: "drpcli -T {{ admin_token.json.Token }} templates create - < {{ provision_var_dir }}/digitalrebar/templates/{{ item.item.item }}"
-  when: item.rc is defined and item.rc == 1 and item.item.changed == true
+  when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 1 and item.item.changed == true
   with_items: "{{ provision_templates_check.results }}"
 
 - name: update custom templates
   shell: "drpcli -T {{ admin_token.json.Token }} templates update {{ item.item.item | regex_replace('.yaml','') }} - < {{ provision_var_dir }}/digitalrebar/templates/{{ item.item.item }}"
-  when: item.rc is defined and item.rc == 0 and item.item.changed == true
+  when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_templates_check.results }}"
 
 - name: check custom profiles
   shell: "drpcli -T {{ admin_token.json.Token }} profiles exists {{ item.Name }}"
-  ignore_errors: yes
   register: provision_profiles_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_profiles_check.rc not in [0,1]
   with_items: "{{ provision_profiles }}"
 
 - name: create custom profiles
   shell: "drpcli -T {{ admin_token.json.Token }} profiles create '{{ item.item | to_json() }}'"
-  when: item.rc is defined and item.rc == 1
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
   with_items: "{{ provision_profiles_check.results }}"
 
 - name: update custom profiles
   shell: "drpcli -T {{ admin_token.json.Token }} profiles update {{ item.item.Name }} '{{ item.item | to_json() }}'"
-  when: item.rc is defined and item.rc == 0
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
   with_items: "{{ provision_profiles_check.results }}"
 
 - name: check custom machines
   shell: "drpcli -T {{ admin_token.json.Token }} machines list"
-  ignore_errors: yes
   register: machine_profiles_check
 
 - name: store custom machines json
@@ -178,12 +206,12 @@
 
 - name: create custom machines
   shell: "drpcli -T {{ admin_token.json.Token }} machines create '{{ item | to_json() }}'"
-  when: item.Name not in (machine_profiles_json | selectattr('Name') | map(attribute='Name') | list)
+  when: not((item is undefined) or (item is none) or (item | trim == '')) and item.Name not in (machine_profiles_json | selectattr('Name') | map(attribute='Name') | list)
   with_items: "{{ provision_machines }}"
 
 - name: update custom machines
   shell: "drpcli -T {{ admin_token.json.Token }} machines update {{ item.1.Uuid }} '{{ item.0 | to_json() }}'"
-  when: item.0.Name == item.1.Name
+  when: not((item.0 is undefined) or (item.0 is none) or (item.0 | trim == '')) and item.0.Name == item.1.Name
   with_nested:
     - "{{ provision_machines }}"
     - "{{ machine_profiles_json }}"
