@@ -76,3 +76,4 @@ provision_options:
   log-level: warn
 provision_profiles: []
 provision_subnets: []
+provision_reservations: []

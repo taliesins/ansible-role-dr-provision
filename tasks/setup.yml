@@ -213,6 +213,23 @@
   when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
   with_items: "{{ provision_subnets_check.results }}"
 ##################
+- name: check custom reservations
+  shell: "drpcli -T {{ admin_token.json.Token }} reservations exists {{ item.Name }}"
+  register: provision_reservations_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_reservations_check.rc not in [0,1]
+  with_items: "{{ provision_reservations }}"
+
+- name: create custom reservations
+  shell: "drpcli -T {{ admin_token.json.Token }} reservations create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_reservations_check.results }}"
+
+- name: update custom reservations
+  shell: "drpcli -T {{ admin_token.json.Token }} reservations update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_reservations_check.results }}"
+##################
 - name: check custom machines
   shell: "drpcli -T {{ admin_token.json.Token }} machines list"
   register: machine_profiles_check
