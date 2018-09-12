@@ -122,11 +122,6 @@
   retries: 60
   delay: 1
 
-- name: get boot environments
-  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item }}"
-  when: not((item is undefined) or (item is none) or (item | trim == '')) and provision_install_default_isos
-  with_items: "{{ provision_content_bootenvs }}"
-
 - name: copy custom bootenvs
   copy:
     src: "{{ provision_files_bootenvs_path }}/{{ item }}"
@@ -153,6 +148,11 @@
   when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_bootenvs_check.results }}"
 
+- name: get boot environments iso
+  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item }}"
+  when: not((item is undefined) or (item is none) or (item | trim == '')) and provision_install_default_isos
+  with_items: "{{ provision_content_bootenvs }}"
+###################
 - name: copy custom templates
   copy:
     src: "{{ provision_files_templates_path }}/{{ item }}"
@@ -178,7 +178,7 @@
   shell: "drpcli -T {{ admin_token.json.Token }} templates update {{ item.item.item | regex_replace('.yaml','') }} - < {{ provision_var_dir }}/digitalrebar/templates/{{ item.item.item }}"
   when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_templates_check.results }}"
-
+####################
 - name: check custom profiles
   shell: "drpcli -T {{ admin_token.json.Token }} profiles exists {{ item.Name }}"
   register: provision_profiles_check
@@ -195,7 +195,24 @@
   shell: "drpcli -T {{ admin_token.json.Token }} profiles update {{ item.item.Name }} '{{ item.item | to_json() }}'"
   when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
   with_items: "{{ provision_profiles_check.results }}"
+#################
+- name: check custom subnets
+  shell: "drpcli -T {{ admin_token.json.Token }} subnets exists {{ item.Name }}"
+  register: provision_subnets_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_subnets_check.rc not in [0,1]
+  with_items: "{{ provision_subnets }}"
 
+- name: create custom subnets
+  shell: "drpcli -T {{ admin_token.json.Token }} subnets create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_subnets_check.results }}"
+
+- name: update custom subnets
+  shell: "drpcli -T {{ admin_token.json.Token }} subnets update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_subnets_check.results }}"
+##################
 - name: check custom machines
   shell: "drpcli -T {{ admin_token.json.Token }} machines list"
   register: machine_profiles_check
