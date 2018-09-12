@@ -247,6 +247,74 @@
   when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
   with_items: "{{ provision_reservations_check.results }}"
 ##################
+- name: check custom workflows
+  shell: "drpcli -T {{ admin_token.json.Token }} workflows exists {{ item.Name }}"
+  register: provision_workflows_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_workflows_check.rc not in [0,1]
+  with_items: "{{ provision_workflows }}"
+
+- name: create custom workflows
+  shell: "drpcli -T {{ admin_token.json.Token }} workflows create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_workflows_check.results }}"
+
+- name: update custom workflows
+  shell: "drpcli -T {{ admin_token.json.Token }} workflows update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_workflows_check.results }}"
+##################
+- name: check custom stages
+  shell: "drpcli -T {{ admin_token.json.Token }} stages exists {{ item.Name }}"
+  register: provision_stages_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_stages_check.rc not in [0,1]
+  with_items: "{{ provision_stages }}"
+
+- name: create custom stages
+  shell: "drpcli -T {{ admin_token.json.Token }} stages create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_stages_check.results }}"
+
+- name: update custom stages
+  shell: "drpcli -T {{ admin_token.json.Token }} stages update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_stages_check.results }}"
+##################
+- name: check custom tasks
+  shell: "drpcli -T {{ admin_token.json.Token }} tasks exists {{ item.Name }}"
+  register: provision_tasks_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_tasks_check.rc not in [0,1]
+  with_items: "{{ provision_tasks }}"
+
+- name: create custom tasks
+  shell: "drpcli -T {{ admin_token.json.Token }} tasks create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_tasks_check.results }}"
+
+- name: update custom tasks
+  shell: "drpcli -T {{ admin_token.json.Token }} tasks update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_tasks_check.results }}"
+##################
+- name: check custom jobs
+  shell: "drpcli -T {{ admin_token.json.Token }} jobs exists {{ item.Name }}"
+  register: provision_jobs_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_jobs_check.rc not in [0,1]
+  with_items: "{{ provision_jobs }}"
+
+- name: create custom jobs
+  shell: "drpcli -T {{ admin_token.json.Token }} jobs create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_jobs_check.results }}"
+
+- name: update custom jobs
+  shell: "drpcli -T {{ admin_token.json.Token }} jobs update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_jobs_check.results }}"
+##################
 - name: check custom machines
   shell: "drpcli -T {{ admin_token.json.Token }} machines list"
   register: machine_profiles_check
