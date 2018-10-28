@@ -2,7 +2,19 @@
 # defaults file for dr-provision
 systemd_root: /lib/systemd/system
 
+provision_content_packages: 
+  - kubespray
+  - task-library
+  - terraform
+  - ansible
+provision_plugin_providers: 
+  - certs
+  - virtualbox-ipmi
+  - packet-ipmi
 provision_clean: no
+provision_catalog_username:
+provision_catalog_base_url: https://qww9e4paf1.execute-api.us-west-2.amazonaws.com/main/catalog
+provision_catalog_plugins_base_url: https://s3-us-west-2.amazonaws.com/rebar-catalog
 provision_release_tag: v3.10.0
 provision_release_base_url: https://github.com/digitalrebar/provision/releases/download
 provision_content_release_tag: v1.10.1
@@ -14,6 +26,7 @@ provision_admin_user: admin
 provision_admin_password: password
 provision_token_ttl: 600
 provision_root_dir: /opt
+provision_catalog_dir: "{{ provision_root_dir }}/dr-provision-catalog-releases"
 provision_content_dir: "{{ provision_root_dir }}/dr-provision-content-releases"
 provision_download_dir: "{{ provision_root_dir }}/dr-provision-releases"
 provision_var_dir: /var/lib/dr-provision

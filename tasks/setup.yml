@@ -93,6 +93,30 @@
     removes: "{{ provision_var_dir }}/digitalrebar/users/rocketskates.json"
   when: provision_admin_user != "rocketskates" and provision_delete_default_user
 
+#################
+- name: check content package exists
+  command: drpcli -T {{ admin_token.json.Token }} contents exists {{ item.id }}
+  register: content_package_result
+  failed_when: content_package_result.rc not in [0,1]
+  with_items: provision_content_packages_with_url
+
+- name: create content package
+  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_catalog_dir }}/contents/{{ item.item.id }}.json\""
+  when: content_package_result.rc != 0
+  with_items: "{{ content_package_result.results }}"
+
+- name: update content package
+  shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.item.id }} \"{{ provision_catalog_dir }}/contents/{{ item.item.id }}.json\""
+  when: content_package_result.rc == 0
+  with_items: "{{ content_package_result.results }}"
+
+#################
+
+- name: update plugin provider
+  shell: "drpcli -T {{ admin_token.json.Token }} plugin_providers upload {{ item.id }} from \"{{ provision_catalog_dir }}/plugins/{{ item.id }}\""
+  with_items: "{{ provision_plugin_providers_with_url.results }}"
+
+#################
 - name: check drp-community-content exists
   command: drpcli -T {{ admin_token.json.Token }} contents exists drp-community-content
   register: drp_community_content_result
@@ -100,28 +124,122 @@
 
 - name: create drp-community-content
   shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml\""
-  when: verify_provision_content_results.stdout | search("OK") and drp_community_content_result.rc != 0
+  when: verify_drp_community_content_results.stdout | search("OK") and drp_community_content_result.rc != 0
 
-- name: load drp-community-content
+- name: update drp-community-content
   shell: "drpcli -T {{ admin_token.json.Token }} contents update drp-community-content \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml\""
-  when: verify_provision_content_results.stdout | search("OK") and drp_community_content_result.rc == 0
+  when: verify_drp_community_content_results.stdout | search("OK") and drp_community_content_result.rc == 0
 
-- name: re-generate admin user token due to contents create bug
-  uri:
-    url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
-    user: "{{ provision_admin_user }}"
-    password: "{{ provision_admin_password }}"
-    headers:
-      Content-Type: "application/json"
-      Accept: "application/json"
-    force_basic_auth: yes
-    return_content: yes
-    validate_certs: no
-  register: admin_token
-  until: admin_token.status == 200
-  retries: 60
-  delay: 1
+# - name: re-generate admin user token due to contents create bug
+#   uri:
+#     url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
+#     user: "{{ provision_admin_user }}"
+#     password: "{{ provision_admin_password }}"
+#     headers:
+#       Content-Type: "application/json"
+#       Accept: "application/json"
+#     force_basic_auth: yes
+#     return_content: yes
+#     validate_certs: no
+#   register: admin_token
+#   until: admin_token.status == 200
+#   retries: 60
+#   delay: 1
 
+#################
+- name: check drp-community-contrib exists
+  command: drpcli -T {{ admin_token.json.Token }} contents exists drp-community-contrib
+  register: drp_community_contrib_result
+  failed_when: drp_community_contrib_result.rc not in [0,1]
+
+- name: create drp-community-contrib
+  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-contrib.yaml\""
+  when: verify_drp_community_contrib_results.stdout | search("OK") and drp_community_contrib_result.rc != 0
+
+- name: update drp-community-contrib
+  shell: "drpcli -T {{ admin_token.json.Token }} contents update drp-community-contrib \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-contrib.yaml\""
+  when: verify_drp_community_contrib_results.stdout | search("OK") and drp_community_contrib_result.rc == 0
+
+# - name: re-generate admin user token due to contents create bug
+#   uri:
+#     url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
+#     user: "{{ provision_admin_user }}"
+#     password: "{{ provision_admin_password }}"
+#     headers:
+#       Content-Type: "application/json"
+#       Accept: "application/json"
+#     force_basic_auth: yes
+#     return_content: yes
+#     validate_certs: no
+#   register: admin_token
+#   until: admin_token.status == 200
+#   retries: 60
+#   delay: 1
+  
+#################
+- name: check krib exists
+  command: drpcli -T {{ admin_token.json.Token }} contents exists krib
+  register: krib_result
+  failed_when: krib_result.rc not in [0,1]
+
+- name: create krib
+  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/krib.yaml\""
+  when: verify_krib_results.stdout | search("OK") and krib_result.rc != 0
+
+- name: update krib
+  shell: "drpcli -T {{ admin_token.json.Token }} contents update krib \"{{ provision_content_dir }}/{{provision_content_release_tag}}/krib.yaml\""
+  when: verify_krib_results.stdout | search("OK") and krib_result.rc == 0
+
+# - name: re-generate admin user token due to contents create bug
+#   uri:
+#     url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
+#     user: "{{ provision_admin_user }}"
+#     password: "{{ provision_admin_password }}"
+#     headers:
+#       Content-Type: "application/json"
+#       Accept: "application/json"
+#     force_basic_auth: yes
+#     return_content: yes
+#     validate_certs: no
+#   register: admin_token
+#   until: admin_token.status == 200
+#   retries: 60
+#   delay: 1
+#################
+- name: check custom subnets
+  shell: "drpcli -T {{ admin_token.json.Token }} subnets exists {{ item.Name }}"
+  register: provision_subnets_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_subnets_check.rc not in [0,1]
+  with_items: "{{ provision_subnets }}"
+
+- name: create custom subnets
+  shell: "drpcli -T {{ admin_token.json.Token }} subnets create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_subnets_check.results }}"
+
+- name: update custom subnets
+  shell: "drpcli -T {{ admin_token.json.Token }} subnets update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_subnets_check.results }}"
+##################
+- name: check custom reservations
+  shell: "drpcli -T {{ admin_token.json.Token }} reservations exists {{ item.Name }}"
+  register: provision_reservations_check
+  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
+  failed_when: provision_reservations_check.rc not in [0,1]
+  with_items: "{{ provision_reservations }}"
+
+- name: create custom reservations
+  shell: "drpcli -T {{ admin_token.json.Token }} reservations create '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
+  with_items: "{{ provision_reservations_check.results }}"
+
+- name: update custom reservations
+  shell: "drpcli -T {{ admin_token.json.Token }} reservations update {{ item.item.Name }} '{{ item.item | to_json() }}'"
+  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
+  with_items: "{{ provision_reservations_check.results }}"
+##################  
 - name: copy custom bootenvs
   copy:
     src: "{{ provision_files_bootenvs_path }}/{{ item }}"
@@ -147,7 +265,7 @@
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.item.item | regex_replace('.yaml','') }} - < {{ provision_var_dir }}/digitalrebar/bootenvs/{{ item.item.item }}"
   when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_bootenvs_check.results }}"
-
+###################
 - name: get boot environments iso
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item }}"
   when: not((item is undefined) or (item is none) or (item | trim == '')) and provision_install_default_isos
@@ -212,40 +330,7 @@
   shell: "drpcli -T {{ admin_token.json.Token }} profiles update {{ item.item.Name }} '{{ item.item | to_json() }}'"
   when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
   with_items: "{{ provision_profiles_check.results }}"
-#################
-- name: check custom subnets
-  shell: "drpcli -T {{ admin_token.json.Token }} subnets exists {{ item.Name }}"
-  register: provision_subnets_check
-  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
-  failed_when: provision_subnets_check.rc not in [0,1]
-  with_items: "{{ provision_subnets }}"
 
-- name: create custom subnets
-  shell: "drpcli -T {{ admin_token.json.Token }} subnets create '{{ item.item | to_json() }}'"
-  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
-  with_items: "{{ provision_subnets_check.results }}"
-
-- name: update custom subnets
-  shell: "drpcli -T {{ admin_token.json.Token }} subnets update {{ item.item.Name }} '{{ item.item | to_json() }}'"
-  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
-  with_items: "{{ provision_subnets_check.results }}"
-##################
-- name: check custom reservations
-  shell: "drpcli -T {{ admin_token.json.Token }} reservations exists {{ item.Name }}"
-  register: provision_reservations_check
-  when: not((item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
-  failed_when: provision_reservations_check.rc not in [0,1]
-  with_items: "{{ provision_reservations }}"
-
-- name: create custom reservations
-  shell: "drpcli -T {{ admin_token.json.Token }} reservations create '{{ item.item | to_json() }}'"
-  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 1
-  with_items: "{{ provision_reservations_check.results }}"
-
-- name: update custom reservations
-  shell: "drpcli -T {{ admin_token.json.Token }} reservations update {{ item.item.Name }} '{{ item.item | to_json() }}'"
-  when: not((item.item is undefined) or (item.item is none) or (item.item | trim == '')) and item.rc is defined and item.rc == 0
-  with_items: "{{ provision_reservations_check.results }}"
 ##################
 - name: check custom workflows
   shell: "drpcli -T {{ admin_token.json.Token }} workflows exists {{ item.Name }}"
