@@ -24,9 +24,14 @@
   shell: "cat {{ provision_catalog_dir }}/catalog.json | jq -c '.content[] | {id: .id, url: (\"{{ provision_catalog_base_url }}/content/\"+.id)}' | jq -s '.'"
   register: get_catalog_content_packages_results
 
+
+- name: Set configured content packages
+  set_fact:
+    provision_content_packages_with_url: "{{ all_provision_content_packages|default({}) | list}}"
+
 - name: get content packages with url
   set_fact:
-    provision_content_packages_with_url : "{{ all_provision_content_packages|default({}) | combine( {'id': item.id, 'url': item.url} ) | list  }}"
+    provision_content_packages_with_url : "{{ provision_content_packages_with_url | combine( {'id': item.id, 'url': item.url} | list )  }}"
   with_items:
     -  "{{ get_catalog_content_packages_results.stdout | from_json | list }}"
   when: item.id in provision_content_packages and item.id not in ['drp-community-content', 'drp-community-contrib', 'krib']
