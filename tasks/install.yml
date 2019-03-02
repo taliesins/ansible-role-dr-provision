@@ -62,9 +62,10 @@
 
 - name: get plugin providers artifacts
   get_url:
-    url: "{{ item.1 }}"
-    dest: "{{ provision_catalog_dir }}/plugins/{{ item.0 }}"
-  with_items: provision_plugin_providers_with_url
+    url: "{{ item.value }}"
+    dest: "{{ provision_catalog_dir }}/plugins/{{ item.key }}"
+  loop: "{{ provision_plugin_providers_with_url|dict2items }}"
+
 #################
 
 - name: get provison-content artifacts
