@@ -27,7 +27,7 @@
 
 - name: Set configured content packages
   set_fact:
-    provision_content_packages_with_url: "{{ all_provision_content_packages|default({}) | list}}"
+    provision_content_packages_with_url: "{{ all_provision_content_packages|default([]) | list}}"
 
 - name: get content packages with url
   set_fact:
