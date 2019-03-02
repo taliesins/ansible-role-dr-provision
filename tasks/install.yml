@@ -44,7 +44,7 @@
   get_url:
     url: "{{ item.1 }}"
     dest: "{{ provision_catalog_dir }}/contents/{{ item.0 }}.json"
-  with_nested: provision_content_packages_with_url
+  with_items: provision_content_packages_with_url
 
 #################
 # cat catalog.json | jq -c '.plugins[] | {id: .id, url: ("https://s3-us-west-2.amazonaws.com/rebar-catalog"+"/"+.versions.tip.source.amd64.linux)}' | jq -s '.'
