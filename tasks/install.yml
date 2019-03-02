@@ -21,7 +21,7 @@
 #################
 # cat catalog.json | jq -c '.content[] | {id: .id, url: ("https://qww9e4paf1.execute-api.us-west-2.amazonaws.com/main/catalog"+"/content/"+.id)}' | jq -s '.'
 - name: get catalog content packages json
-  command: "cat {{ provision_catalog_dir }}/catalog.json | jq -c '.content[] | {id: .id, url: (\"{{ provision_catalog_base_url }}\"+\"/content/\"+.id)}' | jq -s '.'"
+  command: "cat {{ provision_catalog_dir }}/catalog.json | jq -c '.content[] | {id: .id, url: (\"{{ provision_catalog_base_url }}/content/\"+.id)}' | jq -s '.'"
   register: get_catalog_content_packages_results
 
 - name: get content packages with url
@@ -40,7 +40,7 @@
 #################
 # cat catalog.json | jq -c '.plugins[] | {id: .id, url: ("https://s3-us-west-2.amazonaws.com/rebar-catalog"+"/"+.versions.tip.source.amd64.linux)}' | jq -s '.'
 - name: get catalog plugin providers json
-  command: "cat {{ provision_catalog_dir }}/catalog.json | jq -c '.plugins[] | {id: .id, url: (\"{{ provision_catalog_plugins_base_url }}\"+\"/\"+.versions.tip.source.amd64.linux)}' | jq -s '.'"
+  command: "cat {{ provision_catalog_dir }}/catalog.json | jq -c '.plugins[] | {id: .id, url: (\"{{ provision_catalog_plugins_base_url }}/\"+.versions.tip.source.amd64.linux)}' | jq -s '.'"
   register: get_catalog_plugin_providers_results
 
 - name: get plugin providers with url
