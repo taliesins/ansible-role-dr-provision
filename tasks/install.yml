@@ -24,7 +24,6 @@
   shell: "cat {{ provision_catalog_dir }}/catalog.json | jq -c '.content[] | {id: .id, url: (\"{{ provision_catalog_base_url }}/content/\"+.id)}' | jq -s '.'"
   register: get_catalog_content_packages_results
 
-
 - name: Set configured content packages
   set_fact:
     provision_content_packages_with_url: "{{ all_provision_content_packages|default({})}}"
@@ -35,10 +34,6 @@
   with_items:
     -  "{{ get_catalog_content_packages_results.stdout | from_json | list }}"
   when: item.id in provision_content_packages and item.id not in ['drp-community-content', 'drp-community-contrib', 'krib']
-
-- debug: msg="{{ provision_content_packages_with_url }}"
-
-- debug: msg="{{ provision_content_packages_with_url | to_json}}"
 
 - name: get content packages artifacts
   get_url:
@@ -52,17 +47,21 @@
   shell: "cat {{ provision_catalog_dir }}/catalog.json | jq -c '.plugins[] | {id: .id, url: (\"{{ provision_catalog_plugins_base_url }}/\"+.versions.tip.source.amd64.linux)}' | jq -s '.'"
   register: get_catalog_plugin_providers_results
 
+- name: Set configured plugin providers
+  set_fact:
+    provision_plugin_providers_with_url: "{{ all_provision_plugin_providers|default({})}}"
+
 - name: get plugin providers with url
   set_fact:
-    provision_plugin_providers_with_url : "{{ all_provision_plugin_providers|default({}) | combine( {'id': item.id, 'url': item.url} ) | list  }}"
+    provision_plugin_providers_with_url : "{{ provision_plugin_providers_with_url | combine({item.id: item.url}) }}"
   with_items:
     -  "{{ get_catalog_plugin_providers_results.stdout | from_json | list }}"
   when: item.id in provision_plugin_providers 
 
 - name: get plugin providers artifacts
   get_url:
-    url: "{{ item.url }}"
-    dest: "{{ provision_catalog_dir }}/plugins/{{ item.id }}"
+    url: "{{ item.1 }}"
+    dest: "{{ provision_catalog_dir }}/plugins/{{ item.0 }}"
   with_items: provision_plugin_providers_with_url
 #################
 
