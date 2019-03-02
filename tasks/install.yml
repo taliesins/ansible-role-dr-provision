@@ -39,9 +39,9 @@
 
 - name: get content packages artifacts
   get_url:
-    url: "{{ item.1 }}"
-    dest: "{{ provision_catalog_dir }}/contents/{{ item.0 }}.json"
-  with_indexed_items: "{{ provision_content_packages_with_url }}""
+    url: "{{ item.value }}"
+    dest: "{{ provision_catalog_dir }}/contents/{{ item.key }}.json"
+  loop: "{{ provision_content_packages_with_url|dict2items }}"
 
 #################
 # cat catalog.json | jq -c '.plugins[] | {id: .id, url: ("https://s3-us-west-2.amazonaws.com/rebar-catalog"+"/"+.versions.tip.source.amd64.linux)}' | jq -s '.'
