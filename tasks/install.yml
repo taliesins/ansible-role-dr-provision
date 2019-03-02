@@ -31,7 +31,7 @@
 
 - name: get content packages with url
   set_fact:
-    provision_content_packages_with_url : "{{ provision_content_packages_with_url | combine({item.id : item.url} }}"
+    provision_content_packages_with_url : "{{ provision_content_packages_with_url | combine({item.id : item.url}) }}"
   with_items:
     -  "{{ get_catalog_content_packages_results.stdout | from_json | list }}"
   when: item.id in provision_content_packages and item.id not in ['drp-community-content', 'drp-community-contrib', 'krib']
