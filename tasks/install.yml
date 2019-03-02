@@ -15,7 +15,7 @@
 
 - name: get catalog json
   get_url:
-    url: "{{ provision_catalog_base_url }}/content"
+    url: "{{ provision_catalog_base_url }}/"
     dest: "{{ provision_catalog_dir }}/catalog.json"
 
 #################
