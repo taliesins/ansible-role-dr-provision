@@ -83,7 +83,7 @@
   command: drpcli -T {{ admin_token.json.Token }} contents exists {{ item.id }}
   register: content_package_result
   failed_when: content_package_result.rc not in [0,1]
-  with_items: provision_content_packages_with_url
+  with_items: "{{ provision_content_packages_with_url.results }}"
 
 - name: create content package
   shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_catalog_dir }}/contents/{{ item.item.id }}.json\""
