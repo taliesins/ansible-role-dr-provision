@@ -87,12 +87,12 @@
 
 - name: create content package
   shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_catalog_dir }}/contents/{{ item.item.id }}.json\""
-  when: content_package_result.rc != 0
+  when: item.rc != 0
   with_items: "{{ content_package_result.results }}"
 
 - name: update content package
   shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.item.id }} \"{{ provision_catalog_dir }}/contents/{{ item.item.id }}.json\""
-  when: content_package_result.rc == 0
+  when: item.rc == 0
   with_items: "{{ content_package_result.results }}"
 
 #################
