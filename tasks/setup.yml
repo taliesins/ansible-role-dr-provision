@@ -83,7 +83,7 @@
   command: drpcli -T {{ admin_token.json.Token }} contents exists {{ item.id }}
   register: content_package_result
   failed_when: content_package_result.rc not in [0,1]
-  with_items: "{{ provision_content_packages_with_url.results }}"
+  with_items: "{{ provision_content_packages_with_url|dict2items }}"
 
 - name: create content package
   shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_catalog_dir }}/contents/{{ item.item.id }}.json\""
@@ -99,7 +99,7 @@
 
 - name: update plugin provider
   shell: "drpcli -T {{ admin_token.json.Token }} plugin_providers upload {{ item.id }} from \"{{ provision_catalog_dir }}/plugins/{{ item.id }}\""
-  with_items: "{{ provision_plugin_providers_with_url.results }}"
+  with_items: "{{ provision_plugin_providers_with_url|dict2items }}"
 
 #################
 - name: check drp-community-content exists
