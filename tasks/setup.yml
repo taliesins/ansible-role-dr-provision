@@ -56,21 +56,6 @@
   args:
     creates: "/etc/bash_completion.d/drpcli"
 
-- name: config dr-provision preferences
-  copy:
-    content: '{"Meta":{},"Name":"{{ item.key }}","Val":"{{ item.value }}"}'
-    dest: "{{ provision_var_dir }}/digitalrebar/preferences/{{ item.key }}.json"
-  with_dict: "{{ provision_preferences }}"
-  register: provision_preferences_results
-
-- name: restart dr-provision 
-  systemd:
-    name: dr-provision
-    state: restarted
-    enabled: yes
-    daemon_reload: yes
-  when: provision_preferences_results.changed
-
 - name: generate admin user token
   uri:
     url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
@@ -419,3 +404,19 @@
   with_nested:
     - "{{ provision_machines }}"
     - "{{ machine_profiles_json }}"
+
+##################
+- name: config dr-provision preferences
+  copy:
+    content: '{"Meta":{},"Name":"{{ item.key }}","Val":"{{ item.value }}"}'
+    dest: "{{ provision_var_dir }}/digitalrebar/preferences/{{ item.key }}.json"
+  with_dict: "{{ provision_preferences }}"
+  register: provision_preferences_results
+
+- name: restart dr-provision 
+  systemd:
+    name: dr-provision
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  when: provision_preferences_results.changed
