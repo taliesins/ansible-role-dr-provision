@@ -34,10 +34,10 @@ provision_download_dir: "{{ provision_root_dir }}/dr-provision-releases"
 provision_var_dir: /var/lib/dr-provision
 provision_bin_dir: /usr/local/bin
 provision_content_bootenvs:
-  - sledgehammer
-  - discovery
-  - centos-7-install
-  - debian-9-install
+  - name: sledgehammer
+  - name: discovery
+  - name: centos-7-install
+  - name: debian-9-install
 
 provision_install_default_isos: yes
 provision_files_bootenvs_path: bootenvs
