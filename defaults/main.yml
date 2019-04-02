@@ -3,10 +3,12 @@
 systemd_root: /lib/systemd/system
 
 provision_content_packages: 
-  - kubespray
+# Kubespray is mutually exclusive from ansible as they both set the same variables
+# - kubespray
+  - ansible
   - task-library
   - terraform
-  - ansible
+
 provision_plugin_providers: 
   - certs
   - virtualbox-ipmi
