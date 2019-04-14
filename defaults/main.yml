@@ -23,13 +23,9 @@ provision_content_release_tag: v1.13.1
 provision_content_release_base_url: https://github.com/digitalrebar/provision-content/releases/download
 provision_content_release:
   - name: drp-community-content
-    override:
   - name: drp-community-contrib
-    override:
   - name: krib
-    override:
   - name: sledgehammer-builder
-    override:
 provision_user: root
 provision_group: root
 provision_delete_default_user: yes

@@ -110,7 +110,7 @@
 
 - name: write provision-content artifacts merged
   copy: 
-    content: "{{ item.content | from_yaml | combine(item.item.override | default({}), recursive=True) | to_nice_yaml(indent=2) }}" 
+    content: "{{ item.content | from_yaml |  to_nice_yaml(indent=2) }}" 
     dest: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.name }}-merged.yaml"
   register: provision_content_merged_results
   with_items : "{{ provision_content_results }}"
