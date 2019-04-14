@@ -120,7 +120,7 @@
   register: provision_content_merged_exists_results
   failed_when: provision_content_merged_exists_results.rc not in [0,1]
   when: item.changed
-  with_items : "{{ provision_content_merged_results }}"
+  with_items : "{{ provision_content_merged_results.results }}"
 
 - name: create provision-content artifacts
   shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.name }}-merged.yaml\""
