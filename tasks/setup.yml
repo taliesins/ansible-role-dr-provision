@@ -112,19 +112,19 @@
 - name: debug provision-content artifacts merged
   debug:
     msg: "item = {{ item }}"
-  with_items : "{{ provision_content_results }}"
+  with_items : "{{ provision_content_results.results }}"
 
 - name: debug provision-content artifacts merged
   debug:
     msg: "item.item.name = {{ item.item.name }}"
-  with_items : "{{ provision_content_results }}"
+  with_items : "{{ provision_content_results.results }}"
 
 - name: write provision-content artifacts merged
   copy: 
     content: "{{ item.content | from_yaml | combine(item.item.override | default({}), recursive=True) | to_nice_yaml(indent=2) }}" 
     dest: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.name }}-merged.yaml"
   register: provision_content_merged_results
-  with_items : "{{ provision_content_results }}"
+  with_items : "{{ provision_content_results.results }}"
 
 - name: check provision-content artifacts exists
   command: "drpcli -T {{ admin_token.json.Token }} contents exists {{ item.item.name }}"
