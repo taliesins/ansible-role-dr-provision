@@ -45,11 +45,29 @@ provision_content_bootenvs:
     install_iso: no
   - Name: centos-7-install
     install_iso: no
+  - Name: centos-7.6.1810-install
+    install_iso: no
+  - Name: debian-8-install
+    install_iso: no
   - Name: debian-9-install
     install_iso: no
   - Name: ubuntu-16.04-install
     install_iso: no
   - Name: ubuntu-18.04-install
+    install_iso: no
+  - Name: ubuntu-18.04-arm64-hwe-install
+    install_iso: no
+  - Name: centos-6-install
+    install_iso: no
+  - Name: centos-6.10-install
+    install_iso: no
+  - Name: centos-6.9-install
+    install_iso: no
+  - Name: centos-7.3.1611-install
+    install_iso: no
+  - Name: scientificlinux-6.8-install
+    install_iso: no
+  - Name: ubuntu-14.04-install
     install_iso: no
 
 provision_files_bootenvs_path: bootenvs
