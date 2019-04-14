@@ -13,12 +13,6 @@
 
     - name: install dependencies
       yum:
-        name: "{{ item }}"
+        name: ['jq', 'git', 'unzip', 'p7zip', 'bsdtar']
         state: latest
-      with_items:
-        - jq
-        - git
-        - unzip
-        - p7zip
-        - bsdtar
   when: ansible_os_family == "RedHat"
