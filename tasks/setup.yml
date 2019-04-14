@@ -116,21 +116,21 @@
   with_items : "{{ provision_content_results.results }}"
 
 - name: check provision-content artifacts exists
-  command: "drpcli -T {{ admin_token.json.Token }} contents exists {{ item.item.item.name }}"
+  shell: "drpcli -T {{ admin_token.json.Token }} contents exists {{ item.item.item.name }}"
   register: provision_content_merged_exists_results
   failed_when: provision_content_merged_exists_results.rc not in [0,1]
   when: item.changed
   with_items : "{{ provision_content_merged_results.results }}"
 
 - name: create provision-content artifacts
-  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.results.item.item.item.name }}-merged.yaml\""
-  when: item.rc != 0
-  with_items : "{{ provision_content_merged_exists_results }}"
+  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.name }}-merged.yaml\""
+  when: item.rc is defined and item.rc != 0
+  with_items : "{{ provision_content_merged_exists_results.results }}"
 
 - name: update provision-content artifacts
-  shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.results.item.item.item.name }} \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.results.item.item.item.name }}-merged.yaml\""
-  when: item.rc == 0
-  with_items : "{{ provision_content_merged_exists_results }}"
+  shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.item.item.item.name }} \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.name }}-merged.yaml\""
+  when: item.rc is defined and item.rc == 0
+  with_items : "{{ provision_content_merged_exists_results.results }}"
   
 #################
 - name: check custom subnets
