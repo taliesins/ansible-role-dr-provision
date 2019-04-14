@@ -115,22 +115,6 @@
   shell: "drpcli -T {{ admin_token.json.Token }} contents update drp-community-content \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml\""
   when: verify_drp_community_content_results.stdout | search("OK") and drp_community_content_result.rc == 0
 
-# - name: re-generate admin user token due to contents create bug
-#   uri:
-#     url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
-#     user: "{{ provision_admin_user }}"
-#     password: "{{ provision_admin_password }}"
-#     headers:
-#       Content-Type: "application/json"
-#       Accept: "application/json"
-#     force_basic_auth: yes
-#     return_content: yes
-#     validate_certs: no
-#   register: admin_token
-#   until: admin_token.status == 200
-#   retries: 60
-#   delay: 1
-
 #################
 - name: check drp-community-contrib exists
   command: drpcli -T {{ admin_token.json.Token }} contents exists drp-community-contrib
@@ -144,22 +128,6 @@
 - name: update drp-community-contrib
   shell: "drpcli -T {{ admin_token.json.Token }} contents update drp-community-contrib \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-contrib.yaml\""
   when: verify_drp_community_contrib_results.stdout | search("OK") and drp_community_contrib_result.rc == 0
-
-# - name: re-generate admin user token due to contents create bug
-#   uri:
-#     url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
-#     user: "{{ provision_admin_user }}"
-#     password: "{{ provision_admin_password }}"
-#     headers:
-#       Content-Type: "application/json"
-#       Accept: "application/json"
-#     force_basic_auth: yes
-#     return_content: yes
-#     validate_certs: no
-#   register: admin_token
-#   until: admin_token.status == 200
-#   retries: 60
-#   delay: 1
   
 #################
 - name: check krib exists
@@ -175,21 +143,20 @@
   shell: "drpcli -T {{ admin_token.json.Token }} contents update krib \"{{ provision_content_dir }}/{{provision_content_release_tag}}/krib.yaml\""
   when: verify_krib_results.stdout | search("OK") and krib_result.rc == 0
 
-# - name: re-generate admin user token due to contents create bug
-#   uri:
-#     url: "https://127.0.0.1:{{ provision_options['api-port'] }}/api/v3/users/{{ provision_admin_user }}/token?ttl={{ provision_token_ttl }}"
-#     user: "{{ provision_admin_user }}"
-#     password: "{{ provision_admin_password }}"
-#     headers:
-#       Content-Type: "application/json"
-#       Accept: "application/json"
-#     force_basic_auth: yes
-#     return_content: yes
-#     validate_certs: no
-#   register: admin_token
-#   until: admin_token.status == 200
-#   retries: 60
-#   delay: 1
+#################
+- name: check sledgehammer-builder exists
+  command: drpcli -T {{ admin_token.json.Token }} contents exists sledgehammer-builder
+  register: sledgehammer_builder_result
+  failed_when: sledgehammer_builder_result.rc not in [0,1]
+
+- name: create sledgehammer-builder
+  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/sledgehammer-builder.yaml\""
+  when: verify_sledgehammer_builder_results.stdout | search("OK") and sledgehammer_builder_result.rc != 0
+
+- name: update sledgehammer-builder
+  shell: "drpcli -T {{ admin_token.json.Token }} contents update sledgehammer-builder \"{{ provision_content_dir }}/{{provision_content_release_tag}}/sledgehammer-builder.yaml\""
+  when: verify_sledgehammer_builder_results.stdout | search("OK") and sledgehammer_builder_result.rc == 0
+
 #################
 - name: check custom subnets
   shell: "drpcli -T {{ admin_token.json.Token }} subnets exists {{ item.Name }}"
@@ -250,6 +217,17 @@
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.item.item | regex_replace('.yaml','') }} - < {{ provision_var_dir }}/digitalrebar/bootenvs/{{ item.item.item }}"
   when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_bootenvs_check.results }}"
+###################
+- name: read drp-community-content
+  slurp: 
+    src: "{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml"
+  register: drp-community-content
+
+- name: write drp-community-content merged
+  copy: 
+    content: "{{ drp-community-content.content | from_yaml | combine(provision_content_bootenvs | selectattr("name", "equalto", "drp-community-content") | map(attribute='override') | first | default({}), recursive=True) | to_nice_yaml(indent=2) }}" 
+    dest: "{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content-merged.yaml"
+
 ###################
 - name: update override bootenvs
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.Name }} '{{ item | to_json() }}'"
