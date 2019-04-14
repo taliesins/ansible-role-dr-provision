@@ -86,6 +86,7 @@
     chdir: "{{ provision_content_dir }}/{{ provision_content_release_tag }}"
   with_items: "{{ provision_content_release }}"
   register: verify_provision_content_results
+  failed_when: verify_provision_content_results.rc not in [0]
 
 - name: get dr-provision artifacts
   get_url:

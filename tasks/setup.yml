@@ -104,32 +104,31 @@
 #################
 - name: read provision-content artifacts
   slurp: 
-    src: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.name}}.yaml"
+    src: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.name}}.yaml"
   register: provision_content_results
-  when: item.stdout | search("OK")
-  with_items : "{{verify_provision_content_results}}"
+  with_items : "{{ provision_content_release }}"
 
 - name: write provision-content artifacts merged
   copy: 
-    content: "{{ item.content | from_yaml | combine(provision_content_release | selectattr('name', 'equalto', item.item.item.name) | map(attribute='override') | first | default({}), recursive=True) | to_nice_yaml(indent=2) }}" 
-    dest: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.name }}-merged.yaml"
+    content: "{{ item.content | from_yaml | combine(provision_content_release | selectattr('name', 'equalto', item.item.name) | map(attribute='override') | first | default({}), recursive=True) | to_nice_yaml(indent=2) }}" 
+    dest: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.name }}-merged.yaml"
   register: provision_content_merged_results
   with_items : "{{ provision_content_results }}"
 
 - name: check provision-content artifacts exists
-  command: "drpcli -T {{ admin_token.json.Token }} contents exists {{ item.item.item.item.name }}"
+  command: "drpcli -T {{ admin_token.json.Token }} contents exists {{ item.item.name }}"
   register: provision_content_merged_exists_results
   failed_when: provision_content_merged_exists_results.rc not in [0,1]
   when: item.changed
   with_items : "{{ provision_content_merged_results }}"
 
 - name: create provision-content artifacts
-  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.item.name }}-merged.yaml\""
+  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.name }}-merged.yaml\""
   when: item.rc != 0
   with_items : "{{ provision_content_merged_exists_results }}"
 
 - name: update provision-content artifacts
-  shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.item.item.item.item.name }} \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.item.name }}-merged.yaml\""
+  shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.item.item.item.name }} \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.name }}-merged.yaml\""
   when: item.rc == 0
   with_items : "{{ provision_content_merged_exists_results }}"
   
