@@ -257,7 +257,11 @@
 
 - name: store override bootenvs json
   set_fact:
-    bootenvs_json: "{{ bootenvs_check.stdout | from_json | combine(provision_content_bootenvs, recursive=True) }}"
+    bootenvs_json: "{{ bootenvs_check.stdout | from_json }}"
+
+- name: store override bootenvs json
+  set_fact:
+    bootenvs_json: "{{ bootenvs_json | combine(provision_content_bootenvs, recursive=True) }}"
 
 - name: update override bootenvs
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.1.Name }} '{{ item.1 | to_json() }}'"
