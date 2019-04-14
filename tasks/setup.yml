@@ -267,8 +267,8 @@
     - "{{ bootenvs_json }}"
 ###################
 - name: upload boot environments iso
-  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item.name }}"
-  when: not((item is undefined) or (item is none) or (item.name | trim == '')) and item.install_iso
+  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item.Name }}"
+  when: not((item is undefined) or (item is none) or (item.Name is undefined) or (item.Name is none) or (item.Name | trim == '')) and item.install_iso
   with_items: "{{ provision_content_bootenvs }}"
 ###################
 - name: copy custom templates

@@ -34,17 +34,17 @@ provision_download_dir: "{{ provision_root_dir }}/dr-provision-releases"
 provision_var_dir: /var/lib/dr-provision
 provision_bin_dir: /usr/local/bin
 provision_content_bootenvs:
-  - name: sledgehammer
+  - Name: sledgehammer
     install_iso: no
-  - name: discovery
+  - Name: discovery
     install_iso: no
-  - name: centos-7-install
+  - Name: centos-7-install
     install_iso: no
-  - name: debian-9-install
+  - Name: debian-9-install
     install_iso: no
-  - name: ubuntu-16.04-install
+  - Name: ubuntu-16.04-install
     install_iso: no
-  - name: ubuntu-18.04-install
+  - Name: ubuntu-18.04-install
     install_iso: no
 
 provision_files_bootenvs_path: bootenvs
