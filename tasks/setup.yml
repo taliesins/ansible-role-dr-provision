@@ -125,12 +125,12 @@
 - name: create provision-content artifacts
   shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.name }}-merged.yaml\""
   when: item.rc != 0
-  with_items : "{{ provision_content_merged_exists_results }}"
+  with_items : "{{ provision_content_merged_exists_results.results }}"
 
 - name: update provision-content artifacts
   shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.item.item.item.name }} \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.name }}-merged.yaml\""
   when: item.rc == 0
-  with_items : "{{ provision_content_merged_exists_results }}"
+  with_items : "{{ provision_content_merged_exists_results.results }}"
   
 #################
 - name: check custom subnets
