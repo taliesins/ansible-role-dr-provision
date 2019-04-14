@@ -251,9 +251,24 @@
   when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_bootenvs_check.results }}"
 ###################
-- name: get boot environments iso
+- name: check override bootenvs
+  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs list"
+  register: bootenvs_check
+
+- name: store override bootenvs json
+  set_fact:
+    bootenvs_json: "{{ provision_content_bootenvs | combine(bootenvs_check.stdout | from_json, recursive=True) }}"
+
+- name: update override bootenvs
+  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.1.Name }} '{{ item.1 | to_json() }}'"
+  when: not((item.0 is undefined) or (item.0 is none) or (item.0 | trim == '')) and item.0.Name == item.1.Name
+  with_nested:
+    - "{{ provision_content_bootenvs }}"
+    - "{{ bootenvs_json }}"
+###################
+- name: upload boot environments iso
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item.name }}"
-  when: not((item is undefined) or (item is none) or (item.name | trim == '')) and provision_install_default_isos
+  when: not((item is undefined) or (item is none) or (item.name | trim == '')) and item.install_iso
   with_items: "{{ provision_content_bootenvs }}"
 ###################
 - name: copy custom templates
