@@ -252,7 +252,7 @@
   with_items: "{{ provision_bootenvs_check.results }}"
 ###################
 - name: update override bootenvs
-  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.Name }} - '{{ item | to_json() }}'"
+  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.Name }} '{{ item | to_json() }}'"
   when: not((item is undefined) or (item is none) or (item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
   with_items:
     - "{{ provision_content_bootenvs }}"
