@@ -3,17 +3,9 @@
   block:
     - name: install dependent packages
       apt:
-        name: "{{ item }}"
+        name: ['apt-transport-https','ca-certificates', 'jq', 'git', 'unzip', 'p7zip-full', 'bsdtar']
         state: latest
         update_cache: yes
-      with_items:
-        - apt-transport-https
-        - ca-certificates
-        - jq
-        - git
-        - unzip
-        - p7zip-full
-        - bsdtar
 
     - name: run apt update
       apt:
