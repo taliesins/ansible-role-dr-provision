@@ -102,61 +102,37 @@
   with_items: "{{ provision_plugin_providers_with_url|dict2items }}"
 
 #################
-- name: check drp-community-content exists
-  command: drpcli -T {{ admin_token.json.Token }} contents exists drp-community-content
-  register: drp_community_content_result
-  failed_when: drp_community_content_result.rc not in [0,1]
+- name: read provision-content artifacts
+  slurp: 
+    src: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.name}}.yaml"
+  register: provision_content_results
+  when: item.stdout | search("OK")
+  with_items : "{{verify_provision_content_results}}"
 
-- name: create drp-community-content
-  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml\""
-  when: verify_drp_community_content_results.stdout | search("OK") and drp_community_content_result.rc != 0
+- name: write provision-content artifacts merged
+  copy: 
+    content: "{{ item.content | from_yaml | combine(provision_content_release | selectattr("name", "equalto", "{{ item.item.item.name }}") | map(attribute='override') | first | default({}), recursive=True) | to_nice_yaml(indent=2) }}" 
+    dest: "{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.name }}-merged.yaml"
+  register: provision_content_merged_results
+  with_items : "{{ provision_content_results }}"
 
-- name: update drp-community-content
-  shell: "drpcli -T {{ admin_token.json.Token }} contents update drp-community-content \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml\""
-  when: verify_drp_community_content_results.stdout | search("OK") and drp_community_content_result.rc == 0
+- name: check provision-content artifacts exists
+  command: "drpcli -T {{ admin_token.json.Token }} contents exists {{ item.item.item.item.name }}"
+  register: provision_content_merged_exists_results
+  failed_when: provision_content_merged_exists_results.rc not in [0,1]
+  when: item.changed
+  with_items : "{{ provision_content_merged_results }}"
 
-#################
-- name: check drp-community-contrib exists
-  command: drpcli -T {{ admin_token.json.Token }} contents exists drp-community-contrib
-  register: drp_community_contrib_result
-  failed_when: drp_community_contrib_result.rc not in [0,1]
+- name: create provision-content artifacts
+  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.item.name }}-merged.yaml\""
+  when: item.rc != 0
+  with_items : "{{ provision_content_merged_exists_results }}"
 
-- name: create drp-community-contrib
-  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-contrib.yaml\""
-  when: verify_drp_community_contrib_results.stdout | search("OK") and drp_community_contrib_result.rc != 0
-
-- name: update drp-community-contrib
-  shell: "drpcli -T {{ admin_token.json.Token }} contents update drp-community-contrib \"{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-contrib.yaml\""
-  when: verify_drp_community_contrib_results.stdout | search("OK") and drp_community_contrib_result.rc == 0
+- name: update provision-content artifacts
+  shell: "drpcli -T {{ admin_token.json.Token }} contents update {{ item.item.item.item.item.name }} \"{{ provision_content_dir }}/{{provision_content_release_tag}}/{{ item.item.item.item.item.name }}-merged.yaml\""
+  when: item.rc == 0
+  with_items : "{{ provision_content_merged_exists_results }}"
   
-#################
-- name: check krib exists
-  command: drpcli -T {{ admin_token.json.Token }} contents exists krib
-  register: krib_result
-  failed_when: krib_result.rc not in [0,1]
-
-- name: create krib
-  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/krib.yaml\""
-  when: verify_krib_results.stdout | search("OK") and krib_result.rc != 0
-
-- name: update krib
-  shell: "drpcli -T {{ admin_token.json.Token }} contents update krib \"{{ provision_content_dir }}/{{provision_content_release_tag}}/krib.yaml\""
-  when: verify_krib_results.stdout | search("OK") and krib_result.rc == 0
-
-#################
-- name: check sledgehammer-builder exists
-  command: drpcli -T {{ admin_token.json.Token }} contents exists sledgehammer-builder
-  register: sledgehammer_builder_result
-  failed_when: sledgehammer_builder_result.rc not in [0,1]
-
-- name: create sledgehammer-builder
-  shell: "drpcli -T {{ admin_token.json.Token }} contents create \"{{ provision_content_dir }}/{{provision_content_release_tag}}/sledgehammer-builder.yaml\""
-  when: verify_sledgehammer_builder_results.stdout | search("OK") and sledgehammer_builder_result.rc != 0
-
-- name: update sledgehammer-builder
-  shell: "drpcli -T {{ admin_token.json.Token }} contents update sledgehammer-builder \"{{ provision_content_dir }}/{{provision_content_release_tag}}/sledgehammer-builder.yaml\""
-  when: verify_sledgehammer_builder_results.stdout | search("OK") and sledgehammer_builder_result.rc == 0
-
 #################
 - name: check custom subnets
   shell: "drpcli -T {{ admin_token.json.Token }} subnets exists {{ item.Name }}"
@@ -218,23 +194,6 @@
   when: not((item.item.item is undefined) or (item.item.item is none) or (item.item.item | trim == '')) and item.rc is defined and item.rc == 0 and item.item.changed == true
   with_items: "{{ provision_bootenvs_check.results }}"
 ###################
-- name: read drp-community-content
-  slurp: 
-    src: "{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content.yaml"
-  register: drp-community-content
-
-- name: write drp-community-content merged
-  copy: 
-    content: "{{ drp-community-content.content | from_yaml | combine(provision_content_bootenvs | selectattr("name", "equalto", "drp-community-content") | map(attribute='override') | first | default({}), recursive=True) | to_nice_yaml(indent=2) }}" 
-    dest: "{{ provision_content_dir }}/{{provision_content_release_tag}}/drp-community-content-merged.yaml"
-
-###################
-- name: update override bootenvs
-  shell: "drpcli -T {{ admin_token.json.Token }} bootenvs update {{ item.Name }} '{{ item | to_json() }}'"
-  when: not((item is undefined) or (item is none) or (item.Name is undefined) or (item.Name is none) or (item.Name | trim == ''))
-  with_items:
-    - "{{ provision_content_bootenvs }}"
-
 - name: upload boot environments iso
   shell: "drpcli -T {{ admin_token.json.Token }} bootenvs uploadiso {{ item.Name }}"
   when: not((item is undefined) or (item is none) or (item.Name is undefined) or (item.Name is none) or (item.Name | trim == '') or (item.install_iso is undefined) or (item.install_iso is none) or (item.install_iso | trim == '')) and item.install_iso

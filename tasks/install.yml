@@ -68,43 +68,24 @@
 
 #################
 
-- name: get provison-content artifacts
+- name: get provision-content artifacts hash
   get_url:
-    url: "{{ provision_content_release_base_url }}/{{ provision_content_release_tag }}/{{ item }}"
-    dest: "{{ provision_content_dir }}/{{ provision_content_release_tag }}/{{ item }}"
-  with_items:
-    - drp-community-content.yaml
-    - drp-community-content.sha256
-    - drp-community-contrib.yaml
-    - drp-community-contrib.sha256
-    - krib.yaml
-    - krib.sha256
-    - sledgehammer-builder.yaml
-    - sledgehammer-builder.sha256
+    url: "{{ provision_content_release_base_url }}/{{ provision_content_release_tag }}/{{ item.name }}.sha256"
+    dest: "{{ provision_content_dir }}/{{ provision_content_release_tag }}/{{ item.name }}.sha256"
+  with_items: "{{ provision_content_release }}"
 
-- name: verify drp-community-content artifact
-  command: sha256sum -c drp-community-content.sha256
+- name: get provision-content artifacts
+  get_url:
+    url: "{{ provision_content_release_base_url }}/{{ provision_content_release_tag }}/{{ item.name }}.yaml"
+    dest: "{{ provision_content_dir }}/{{ provision_content_release_tag }}/{{ item.name }}.yaml"
+  with_items: "{{ provision_content_release }}"
+
+- name: verify provision-content artifacts
+  command: "sha256sum -c {{ item.name }}.sha256"
   args:
     chdir: "{{ provision_content_dir }}/{{ provision_content_release_tag }}"
-  register: verify_drp_community_content_results
-
-- name: verify drp-community-contrib artifact
-  command: sha256sum -c drp-community-contrib.sha256
-  args:
-    chdir: "{{ provision_content_dir }}/{{ provision_content_release_tag }}"
-  register: verify_drp_community_contrib_results
-
-- name: verify krib artifact
-  command: sha256sum -c krib.sha256
-  args:
-    chdir: "{{ provision_content_dir }}/{{ provision_content_release_tag }}"
-  register: verify_krib_results
-
-- name: verify sledgehammer-builder artifact
-  command: sha256sum -c sledgehammer-builder.sha256
-  args:
-    chdir: "{{ provision_content_dir }}/{{ provision_content_release_tag }}"
-  register: verify_sledgehammer_builder_results
+  with_items: "{{ provision_content_release }}"
+  register: verify_provision_content_results
 
 - name: get dr-provision artifacts
   get_url:
