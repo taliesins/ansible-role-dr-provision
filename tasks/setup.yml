@@ -108,16 +108,13 @@
   register: provision_content_results
   with_items : "{{ provision_content_release }}"
 
-
 - name: debug provision-content artifacts merged
   debug:
-    msg: "item = {{ item }}"
+    msg: "item.item.name = {{ item.item.name }} \r\n override = {{ item.item.override | default({}) }}"
   with_items : "{{ provision_content_results.results }}"
 
-- name: debug provision-content artifacts merged
-  debug:
-    msg: "item.item.name = {{ item.item.name }}"
-  with_items : "{{ provision_content_results.results }}"
+- fail:
+   msg: "exit now "
 
 - name: write provision-content artifacts merged
   copy: 
